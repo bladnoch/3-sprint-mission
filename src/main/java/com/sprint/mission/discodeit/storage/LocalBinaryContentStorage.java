@@ -37,7 +37,6 @@ import java.util.UUID;
 public class LocalBinaryContentStorage implements BinaryContentStorage {
     private static final String PROFILE_PATH = "img";
     private final JpaBinaryContentRepository binaryContentRepository;
-//    private final FileUploadUtils fileUploadUtils;
 
     private Path root;
 
@@ -59,11 +58,7 @@ public class LocalBinaryContentStorage implements BinaryContentStorage {
 
     @Override
     public UUID put(UUID binaryContentId, byte[] bytes) {
-//        String uploadPath = fileUploadUtils.getUploadPath(PROFILE_PATH);
         BinaryContent attachment = binaryContentRepository.findById(binaryContentId).orElseThrow(() -> new IllegalStateException("image information is not saved"));
-
-//        String filename = attachment.getFileName();
-//        String extension = filename.substring(filename.lastIndexOf(".") + 1);
 
         Path path = resolvePath(binaryContentId, attachment.getExtension());
 
