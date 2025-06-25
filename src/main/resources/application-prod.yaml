@@ -13,16 +13,25 @@ discodeit:
 
 # Spring 설정
 spring:
+  logging:
+    level:
+      root: INFO
+  config:
+    activate:
+      on-profile: prod
   datasource:
     url: jdbc:postgresql://localhost:5432/discodeit
     username: discodeit_user
     password: discodeit1234
     driver-class-name: org.postgresql.Driver
-
+  sql:
+    init:
+      schema-locations:
+        - classpath:schema-psql.sql
 
   jpa:
     hibernate:
-      ddl-auto: update # create   # DDL? schema.sql ? ??
+      ddl-auto: update # create   # DDL? schema-psql.sql ? ??
     show-sql: false
     properties:
       hibernate:
@@ -62,3 +71,55 @@ file:
     all:
       # 윈도우 OS용 파일 업로드 기본 경로
       path: ./files
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics, loggers     # 엔드포인트 노출
+      base-path: /actuator  # Actuator 엔드포인트 기본 경로
+  endpoint:
+    health:
+      show-details: always      # 건강 상태 상세 정보 표시
+      show-components: always   # 컴포넌트별 상태 정보 표시
+    info:
+      enabled: true             # info 엔드포인트 명시적 활성화
+    loggers:
+      access: unrestricted  # loggers 엔드포인트를 인증 없이 누구나 접근 가능하도록 설정
+      # access: read_only   # loggers 엔드포인트를 읽기 전용으로 허용 (로그 레벨 변경 불가)
+      # access: none        # loggers 엔드포인트 접근 완전 차단
+  # Actuator info 엔드포인트 설정(아래 info 설정 참조)
+  info:
+    env:
+      enabled: true             # 환경 변수 정보 포함
+    java:
+      enabled: true             # Java 정보 포함
+    os:
+      enabled: true             # OS 정보 포함
+  prometheus:
+    metrics:
+      export:
+        enabled: true  # 프로메테우스 메트릭 활성화
+  metrics:
+    tags:
+      application: library-system  # 메트릭 태그 추가
+
+info:
+  app:
+    name: Discodeit
+    version: 1.7.0
+  java:
+    version: 17
+  spring-boot:
+    version: 3.4.0
+  datasource:
+    url: ${spring.datasource.url}
+    driver-class-name: ${spring.datasource.driver-class-name}
+  jpa:
+    ddl-auto: ${spring.jpa.hibernate.ddl-auto}
+  storage:
+    type: ${discodeit.storage.type}
+    path: ${discodeit.repository.file-directory}
+  multipart:
+    max-file-size: ${spring.servlet.multipart.max-file-size}
+    max-request-size: ${spring.servlet.multipart.max-request-size}

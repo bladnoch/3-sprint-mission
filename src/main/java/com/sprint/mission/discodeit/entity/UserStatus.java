@@ -1,9 +1,7 @@
 package com.sprint.mission.discodeit.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.io.Serializable;
 import java.time.Instant;
@@ -26,7 +24,10 @@ import java.time.Instant;
 @Table(name = "user_statuses", schema = "discodeit")
 @Setter
 @Getter
+@ToString
+@AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class UserStatus extends BaseUpdatableEntity implements Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -52,15 +53,4 @@ public class UserStatus extends BaseUpdatableEntity implements Serializable {
         this.lastActiveAt = Instant.now();
     }
 
-    @Override
-    public String toString() {
-        return "UserStatus{" +
-                "user=" + user +
-                ", lastActiveAt=" + lastActiveAt +
-                ", updatedAt(updatable)=" + updatedAt +
-                ", id=" + id +
-                ", createdAt=" + createdAt +
-                ", updatedAt=" + updatedAt +
-                '}';
-    }
 }
