@@ -1,21 +1,25 @@
 package com.sprint.mission.discodeit.service.basic;
 
 import com.sprint.mission.discodeit.dto.binaryContent.BinaryContentCreateRequest;
-import com.sprint.mission.discodeit.dto.user.*;
+import com.sprint.mission.discodeit.dto.user.JpaUserResponse;
 import com.sprint.mission.discodeit.dto.user.request.UserCreateRequest;
 import com.sprint.mission.discodeit.dto.user.request.UserUpdateRequest;
 import com.sprint.mission.discodeit.entity.BinaryContent;
 import com.sprint.mission.discodeit.entity.User;
 import com.sprint.mission.discodeit.entity.UserStatus;
+import com.sprint.mission.discodeit.exception.UserAlreadyExistsException;
+import com.sprint.mission.discodeit.exception.UserNotFoundException;
 import com.sprint.mission.discodeit.helper.FileUploadUtils;
-//import com.sprint.mission.discodeit.mapper.original.UserMapper;
-import com.sprint.mission.discodeit.mapper.advanced.AdvancedUserMapper;
+import com.sprint.mission.discodeit.mapper.advanced.UserMapper;
+
 import com.sprint.mission.discodeit.repository.jpa.JpaBinaryContentRepository;
 import com.sprint.mission.discodeit.repository.jpa.JpaUserRepository;
 import com.sprint.mission.discodeit.repository.jpa.JpaUserStatusRepository;
 import com.sprint.mission.discodeit.service.UserService;
 import com.sprint.mission.discodeit.storage.BinaryContentStorage;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,14 +46,15 @@ public class BasicUserService implements UserService {
     private final JpaBinaryContentRepository binaryContentRepository;
     private final JpaUserStatusRepository userStatusRepository;
     private final FileUploadUtils fileUploadUtils;
-    private final AdvancedUserMapper userMapper;
+    private final UserMapper userMapper;
     private final BinaryContentStorage binaryContentStorage;
 
-    // 1회 조회로 수정
+    private static final Logger log= LoggerFactory.getLogger(BasicUserService.class);
+
+
     @Transactional(readOnly = true)
     public List<JpaUserResponse> findAllUsers() {
         List<User> users = userRepository.findAllWithBinaryContentAndUserStatus();
-        System.out.println(users.size());
 
         List<JpaUserResponse> responses = new ArrayList<>();
         // user fields + online 으로 response 생성
@@ -66,26 +71,33 @@ public class BasicUserService implements UserService {
             UserCreateRequest userCreateRequest,
             Optional<BinaryContentCreateRequest> profile
     ) {
-        boolean usernameNotUnique =userRepository.existsByUsername(userCreateRequest.username());
+        boolean usernameNotUnique = userRepository.existsByUsername(userCreateRequest.username());
         boolean emailNotUnique = userRepository.existsByEmail(userCreateRequest.email());
 
         if (usernameNotUnique || emailNotUnique) {
-            throw new IllegalArgumentException("User with email " + userCreateRequest.email() + " already exitsts");
+            if (usernameNotUnique) {
+                throw new UserAlreadyExistsException(Map.of("username", userCreateRequest.username()));
+            } else {
+                throw new UserAlreadyExistsException(Map.of("email", userCreateRequest.email()));
+            }
         }
 
+        log.info("profile image is " + profile.map(BinaryContentCreateRequest::fileName).stream().findFirst().orElse(null));
+
         BinaryContent nullableProfile = profile
-                .map(
-                        profileRequest -> {
-                            String filename = profileRequest.fileName();
-                            String contentType = profileRequest.contentType();
-                            byte[] bytes = profileRequest.bytes();
-                            String extension = profileRequest.fileName().substring(filename.lastIndexOf("."));
-                            BinaryContent binaryContent = new BinaryContent(filename, (long)bytes.length, contentType, extension);
-                            binaryContentRepository.save(binaryContent);
-                            binaryContentStorage.put(binaryContent.getId(), bytes);
-                            return binaryContent;
-                        }
-                ).orElse(null);
+            .map(
+                profileRequest -> {
+                    String filename = profileRequest.fileName();
+                    String contentType = profileRequest.contentType();
+                    byte[] bytes = profileRequest.bytes();
+                    String extension = profileRequest.fileName().substring(filename.lastIndexOf("."));
+
+                    BinaryContent binaryContent = new BinaryContent(filename, (long) bytes.length, contentType, extension);
+                    binaryContentRepository.save(binaryContent);
+                    binaryContentStorage.put(binaryContent.getId(), bytes);
+                    return binaryContent;
+                }
+            ).orElse(null);
 
         User user;
         if (nullableProfile == null) {
@@ -93,11 +105,12 @@ public class BasicUserService implements UserService {
             userRepository.save(user);
         } else {
             // USER 객체 생성
-            user = new User(
-                    userCreateRequest.username(),
-                    userCreateRequest.email(),
-                    userCreateRequest.password(),
-                    nullableProfile);
+            user = User.builder()
+                .username(userCreateRequest.username())
+                .email(userCreateRequest.email())
+                .password(userCreateRequest.password())
+                .profile(nullableProfile)
+                .build();
             userRepository.save(user);
         }
         // USER STATUS
@@ -114,8 +127,7 @@ public class BasicUserService implements UserService {
     @Override
     public void deleteUser(UUID userId) {
         Objects.requireNonNull(userId, "no user Id: BasicUserService.deleteUser");
-
-        User user = userRepository.findById(userId).orElseThrow(() -> new NoSuchElementException(userId + " not found"));
+        User user = userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException(Map.of("userId ", userId)));
 
         if (user.getProfile() != null) { // 프로필 있으면
             BinaryContent profile = user.getProfile();
@@ -141,7 +153,7 @@ public class BasicUserService implements UserService {
     @Override
     public JpaUserResponse update(UUID userId, UserUpdateRequest request, MultipartFile file) {
 
-        User user = userRepository.findById(userId).orElseThrow(() -> new NoSuchElementException("user with id " + userId + " not found"));
+        User user = userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException(Map.of("userId ", userId)));
 
         String oldName = user.getUsername();
         String oldEmail = user.getEmail();
@@ -158,13 +170,13 @@ public class BasicUserService implements UserService {
 
         // name : 있으면 400
         if (userRepository.existsByUsername(newName) && (!oldName.equals(newName))) { // 있고 내 이름도 아닌경우
-            throw new IllegalArgumentException("user with name" + request.newUsername() + " already exists");
+            throw new  UserAlreadyExistsException(Map.of("username", newName));
         }
         user.setUsername(newName);
 
         // email: 있으면 400
         if (userRepository.existsByEmail(newEmail) && (!oldEmail.equals(newEmail))) { // 있고 내 이메일이 아닌경우
-            throw new IllegalArgumentException("user with email " + request.newPassword() + " already exists");
+            throw new  UserAlreadyExistsException(Map.of("email", newEmail));
         }
         user.setEmail(newEmail);
 
@@ -221,7 +233,5 @@ public class BasicUserService implements UserService {
     private boolean hasValue(MultipartFile attachmentFiles) {
         return (attachmentFiles != null) && (!attachmentFiles.isEmpty());
     }
-
-
 
 }

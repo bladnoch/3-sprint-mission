@@ -5,7 +5,6 @@ import com.sprint.mission.discodeit.dto.message.request.MessageCreateRequest;
 import com.sprint.mission.discodeit.dto.message.request.MessageUpdateRequest;
 import com.sprint.mission.discodeit.dto.message.response.AdvancedJpaPageResponse;
 import com.sprint.mission.discodeit.dto.message.response.JpaMessageResponse;
-import com.sprint.mission.discodeit.dto.message.response.JpaPageResponse;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -27,14 +26,11 @@ import java.util.UUID;
  */
 public interface MessageService {
 
-    //page 방식
-//    JpaPageResponse findAllByChannelId(UUID channelId, Pageable pageable);
-
     JpaMessageResponse createMessage(MessageCreateRequest MessageAttachmentRequest, List<MultipartFile> multipartFiles);
 
     JpaMessageResponse updateMessage(UUID messageId, MessageUpdateRequest request);
 
-    boolean deleteMessage(UUID messageId);
+    void deleteMessage(UUID messageId);
 
     AdvancedJpaPageResponse findAllByChannelIdAndCursor(UUID channelId, Instant cursor, Pageable pageable);
 }
