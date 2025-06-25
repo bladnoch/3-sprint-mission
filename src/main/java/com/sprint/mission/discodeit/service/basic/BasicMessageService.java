@@ -145,6 +145,7 @@ public class BasicMessageService implements MessageService {
     @Override
     public JpaMessageResponse updateMessage(UUID messageId, MessageUpdateRequest request) {
         Message message = messageRepository.findById(messageId).orElseThrow(() -> new MessageNotFoundException(Map.of("messageId", messageId)));
+
         message.setContent(request.newContent());
 
         JpaMessageResponse response = messageMapper.toDto(message);

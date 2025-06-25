@@ -11,6 +11,7 @@ import com.sprint.mission.discodeit.exception.UserAlreadyExistsException;
 import com.sprint.mission.discodeit.exception.UserNotFoundException;
 import com.sprint.mission.discodeit.helper.FileUploadUtils;
 import com.sprint.mission.discodeit.mapper.advanced.UserMapper;
+
 import com.sprint.mission.discodeit.repository.jpa.JpaBinaryContentRepository;
 import com.sprint.mission.discodeit.repository.jpa.JpaUserRepository;
 import com.sprint.mission.discodeit.repository.jpa.JpaUserStatusRepository;
@@ -126,7 +127,6 @@ public class BasicUserService implements UserService {
     @Override
     public void deleteUser(UUID userId) {
         Objects.requireNonNull(userId, "no user Id: BasicUserService.deleteUser");
-
         User user = userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException(Map.of("userId ", userId)));
 
         if (user.getProfile() != null) { // 프로필 있으면
@@ -233,4 +233,5 @@ public class BasicUserService implements UserService {
     private boolean hasValue(MultipartFile attachmentFiles) {
         return (attachmentFiles != null) && (!attachmentFiles.isEmpty());
     }
+
 }

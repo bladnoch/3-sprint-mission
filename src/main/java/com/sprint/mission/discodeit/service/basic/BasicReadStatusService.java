@@ -36,8 +36,8 @@ public class BasicReadStatusService implements ReadStatusService {
     private final JpaReadStatusRepository readStatusRepository;
     private final JpaUserRepository userRepository;
     private final JpaChannelRepository channelRepository;
-    private final ReadStatusMapper readStatusMapper;
 
+    private final ReadStatusMapper readStatusMapper;
 
     @Override
     public List<JpaReadStatusResponse> findAllByUserId(UUID userId) {

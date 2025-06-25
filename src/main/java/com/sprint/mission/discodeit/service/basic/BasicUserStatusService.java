@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
+
 /**
  * packageName    : com.sprint.mission.discodeit.service.basic fileName       :
  * BasicUserStatusService author         : doungukkim date           : 2025. 4. 28. description    :
@@ -28,9 +29,11 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class BasicUserStatusService implements UserStatusService {
   private final JpaUserRepository userRepository;
+
   private final UserStatusMapper userStatusMapper;
 
   private static final Logger log = LoggerFactory.getLogger(BasicUserStatusService.class);
+
 
   @Transactional
   @Override

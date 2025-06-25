@@ -68,7 +68,6 @@ public class BasicChannelService implements ChannelService {
         if (users.size() < 2) {
             throw new UserNotFoundException(Map.of("users", "not enough users in private channel"));
         }
-
         // channel 생성
         Channel channel = new Channel();
         channelRepository.save(channel);
@@ -83,7 +82,6 @@ public class BasicChannelService implements ChannelService {
             readStatusRepository.save(readStatus);
             readStatuses.add(readStatus);
         }
-
         List<User> userList = readStatuses.stream().map(r -> r.getUser()).toList();
         for (User user : userList) {
             participants.add(userMapper.toDto(user));
@@ -99,6 +97,7 @@ public class BasicChannelService implements ChannelService {
         }
 
         List<JpaChannelResponse> responses = new ArrayList<>();
+
         Set<UUID> channelIds = new HashSet<>();
 
         List<Channel> publicChannels = channelRepository.findAllByType(ChannelType.PUBLIC);
@@ -131,6 +130,7 @@ public class BasicChannelService implements ChannelService {
             channel.setDescription(request.newDescription());
         } else {
             throw new PrivateChannelUpdateException(Map.of("channelId", channelId));
+
         }
         return channelMapper.toDto(channel);
     }
@@ -140,7 +140,7 @@ public class BasicChannelService implements ChannelService {
     public void deleteChannel(UUID channelId) {
         if (!channelRepository.existsById(channelId)) {
             throw new ChannelNotFoundException(Map.of("channelId", channelId));
-        }
+
 
         List<ReadStatus> targetReadStatuses = readStatusRepository.findAllByChannelId(channelId);
 
@@ -151,5 +151,6 @@ public class BasicChannelService implements ChannelService {
         messageRepository.deleteAll(targetMessages);
 
         channelRepository.deleteById(channelId);
+
     }
 }
